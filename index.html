@@ -2,8 +2,32 @@
 <html>
 <head>
     <title>A Lightbox for Instagram</title>
+    <link rel="stylesheet" type="text/css" href="styles/lb.css">
+    <script type="text/javascript" src="scripts/lb.js"></script>
 </head>
 <body>
-
+<div class='app'>
+    <div class='header'>Welcome to the Lightbox for Instagram!</div>
+    <div class='main'>
+        <div id='thumbnails' class='gallery'>
+        </div>
+        <div class="lightbox">
+            <div class="content">
+                <div class="prev">
+                    <div>previous</div>
+                </div>
+                <img class="picture" src="">
+                <div class="next">
+                    <div>next</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    if (typeof LB !== 'undefined' && LB !== null) {
+        LB.render('thumbnails');
+    }
+</script>
 </body>
 </html>

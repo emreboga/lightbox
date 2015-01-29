@@ -1,0 +1,10 @@
+{
+    "name": "test-server",
+    "description": "Node server for Instagram mock data",
+    "version": "0.0.1",
+
+    "dependencies": {
+        "express": "4.11.1",
+        "cors": "2.5.3"
+    }
+}

@@ -1,0 +1,85 @@
+body {
+    color: #000;
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-color: #f7f7f7;
+    font-size: 14px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.app {
+    width: 800px;
+    height: 300px;
+    margin: 0 auto;
+    text-align: center;
+    border: 1px solid;
+}
+
+.app .header {
+    margin: 25px 0px;
+}
+
+.app .main .gallery {
+    margin: 0 auto;
+}
+.app .main .gallery img {
+    opacity: 0.5;
+}
+.app .main .gallery img:hover {
+    opacity: 1.0;
+}
+
+.app .main .lightbox {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.app .main .lightbox img {
+    width: 80%;
+    height: 640px;
+}
+
+.app .main .lightbox .content {
+    width: 640px;
+    height: 640px;
+    margin: 0 auto;
+    padding: 30px 0px;
+}
+
+.app .main .lightbox .prev {
+    float: left;
+}
+.app .main .lightbox .next {
+    float: right;
+}
+.app .main .lightbox .prev,
+.app .main .lightbox .next {
+    width: 10%;
+    height: 640px;
+    background-color: #696969;
+}
+.app .main .lightbox .prev div,
+.app .main .lightbox .next div {
+    line-height: 640px;
+}
+.app .main .lightbox .prev:hover,
+.app .main .lightbox .next:hover {
+    background-color: #A9A9A9;
+    cursor: pointer;
+}
+
+@media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
+    .lb-app {
+    }
+    .lb-header {
+    }
+    .lb-photos {
+    }
+}
