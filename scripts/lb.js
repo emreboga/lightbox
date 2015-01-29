@@ -10,8 +10,8 @@ var LB = (function() {
     };
 
     function getThumbnails() {
-        //var url = 'https://api.instagram.com/v1/media/popular?client_id=0b6d705a46474d258f5980c77c750ecd&count=5';
-        var url = 'http://127.0.0.1:7777/mocks/popular_5.json';
+        var url = 'https://api.instagram.com/v1/media/popular?client_id=0b6d705a46474d258f5980c77c750ecd&count=5';
+        //var url = 'http://127.0.0.1:7777/mocks/popular_5.json';
         return makeXHttpRequest(url);
     }
 
