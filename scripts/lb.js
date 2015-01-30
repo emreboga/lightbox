@@ -1,18 +1,19 @@
 // An abstraction layer for Light Box
 var LightBox = (function() {
     var imageUrls = [];
-    var apiKey, elmId;
+    var apiKey, elmId, photoSetId;
 
     function LightBox(options) {
         apiKey = options.apiKey;
         elmId = options.containerId;
+        photoSetId = options.photoSetId;
     }
 
     LightBox.prototype.render = function() {
         var photoSet = new FlickrPhotoSet({
             'callback': setupLightBox,
             'apiKey': apiKey,
-            'photoSetId': '72157626579923453'
+            'photoSetId': photoSetId
         });
         photoSet.render(elmId);
     };
