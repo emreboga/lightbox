@@ -1,68 +1,27 @@
-var LB = (function() {
-    var lb = {};
-    var flickrKey = 'd22ceeb31ddf3c037c6e5f88fa39a249';
+// An abstraction layer for Light Box
+var LightBox = (function() {
+    var imageUrls = [];
+    var apiKey, elmId;
 
-    lb.imageUrls = [];
+    function LightBox(options) {
+        apiKey = options.apiKey;
+        elmId = options.containerId;
+    }
 
-    lb.render = function(elmId) {
-        getPhotos().then(function(response) {
-            var photos = response.getElementsByTagName('photo');
-            renderThumbnails(elmId, photos);
-        }, logError);
+    LightBox.prototype.render = function() {
+        var photoSet = new FlickrPhotoSet({
+            'callback': setupLightBox,
+            'apiKey': apiKey,
+            'photoSetId': '72157626579923453'
+        });
+        photoSet.render(elmId);
     };
 
-    function getPhotos() {
-        var url = 'https://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos&photoset_id=72157626579923453&api_key=' + flickrKey;
-        //var url = 'http://127.0.0.1:7777/mocks/flickr.xml';
-        return makeXHttpRequest(url);
-    }
-
-    function renderThumbnails(elmId, data) {
-        var elm = document.getElementById(elmId);
-        if (typeof elm !== 'undefined' && elm !== null) {
-            for (var i = 0, l = data.length; i < l; i++) {
-                var photo = data[i];
-                // construct the image url
-                var photoUrl = buildPhotoUrl(photo);
-                // create an anchor and a child image element for each image
-                var imgAnchor = document.createElement('a');
-                imgAnchor.innerHTML = '<img src="' + encodeURI(photoUrl) + '" alt="' + photo.getAttribute('title') + '">';
-                // append each anchor to the container and listen to click event
-                elm.appendChild(imgAnchor);
-                imgAnchor.addEventListener('click', makeEventListener(i));
-                // cache stardard resolution of the image to be used in lightbox view
-                lb.imageUrls[i] = photoUrl;
-            }
-        }
-    }
-
-    // builds the photo url from the flickr photo element
-    function buildPhotoUrl(photo) {
-        // default image
-        var url = 'images/no_image.svg';
-        // attributes required to build the flickr image url
-        var farm = photo.getAttribute('farm');
-        var server = photo.getAttribute('server');
-        var id = photo.getAttribute('id');
-        var secret = photo.getAttribute('secret');
-        // only build when all attributes available
-        if (farm && server && id && secret) {
-            url = 'http://farm' + farm + '.static.flickr.com/' + server + '/' + id + '_' + secret + '_' + 't.jpg';
-        }
-        return url;
-    }
-
-    // returns a click event listener with the idx parameter stored used its scope
-    // this is one way to use the image specific index without using any global collection
-    function makeEventListener(idx) {
-        return function(e) {
-            setupLightBox(e, idx);
-        };
-    }
-
-    function setupLightBox(e, idx) {
+    function setupLightBox(images, e, idx) {
         // prevent default click behavior to avoid the browser closing the overlay
         e.preventDefault();
+        // set image urls to be used in navigation
+        imageUrls = images;
         // setting up the lightbox has two steps:
         // 1- display the overlay
         // 2- add listeners for navigation
@@ -85,6 +44,16 @@ var LB = (function() {
         imageElm.addEventListener('click', function(e) {
             e.stopPropagation();
         });
+    }
+
+    function closeLightbox(elm) {
+        var lightboxElm = elm || document.getElementsByClassName('lightbox')[0];
+        if (typeof lightboxElm !== 'undefined' && lightboxElm !== null) {
+            // close the lightbox
+            lightboxElm.style.display = 'none';
+            // remove keydown listeners at document level when closing the lightbox
+            document.removeEventListener('keydown', navigateKeydown);
+        }
     }
 
     function setupNavigation() {
@@ -135,24 +104,103 @@ var LB = (function() {
 
     function setImage(imageElm, idx) {
         // set new image src and update next/prev indexes in data- attributes
-        imageElm.src = encodeURI(lb.imageUrls[idx]);
-        imageElm.dataset.prevImageIndex = idx === 0 ? lb.imageUrls.length - 1 : idx - 1;
-        imageElm.dataset.nextImageIndex = idx === lb.imageUrls.length - 1 ? 0 : idx + 1;
+        imageElm.src = encodeURI(imageUrls[idx]);
+        imageElm.dataset.prevImageIndex = idx === 0 ? imageUrls.length - 1 : idx - 1;
+        imageElm.dataset.nextImageIndex = idx === imageUrls.length - 1 ? 0 : idx + 1;
     }
 
-    function closeLightbox(elm) {
-        var lightboxElm = elm || document.getElementsByClassName('lightbox')[0];
-        if (typeof lightboxElm !== 'undefined' && lightboxElm !== null) {
-            // close the lightbox
-            lightboxElm.style.display = 'none';
-            // remove keydown listeners at document level when closing the lightbox
-            document.removeEventListener('keydown', navigateKeydown);
+    return LightBox;
+}());
+
+// An abstraction layer for Flickr Photo Set
+var FlickrPhotoSet = (function() {
+    var restUrl = 'https://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos';
+    var imageUrls = [];
+    var lightboxDelegate, apiKey, photoSetId;
+
+    // constructor
+    // data: photo set as xml node
+    // callback: handler to call back when an image is clicked
+    function FlickrPhotoSet(options) {
+        lightboxDelegate = options.callback;
+        apiKey = options.apiKey;
+        photoSetId = options.photoSetId;
+    }
+
+    // public render function for a FlickrPhotoSet instance
+    // elmId: element Id where to render the photo set
+    FlickrPhotoSet.prototype.render = function(elmId) {
+        getPhotos().then(function(response) {
+            var photos = response.getElementsByTagName('photo');
+            renderGallery(elmId, photos);
+        }, Utility.logError);
+    };
+
+    // calls Flicker service to retrieve photos
+    // when a query parameter 'mockupData=1' is specified, mockup data in the testserver/mocks/flickr.xml is returned
+    function getPhotos() {
+        var url = restUrl + '&photoset_id=' + photoSetId + '&api_key=' + apiKey;
+        if (Utility.getQueryParams().mockupData === '1') {
+            url = 'http://127.0.0.1:7777/mocks/flickr.xml';
+        }
+        return Utility.makeXHttpRequest(url);
+    }
+
+    // renders the photo set as a gallery witin the specified element
+    function renderGallery(elmId, photos) {
+        var elm = document.getElementById(elmId);
+        if (typeof elm !== 'undefined' && elm !== null) {
+            for (var i = 0, l = photos.length; i < l; i++) {
+                var photo = photos[i];
+                // construct the image url
+                var photoUrl = buildPhotoUrl(photo);
+                // create an anchor and a child image element for each image
+                var imgAnchor = document.createElement('a');
+                imgAnchor.title = photo.getAttribute('title');
+                imgAnchor.innerHTML = '<img src="' + encodeURI(photoUrl) + '">';
+                // append each anchor to the container and listen to click event
+                elm.appendChild(imgAnchor);
+                imgAnchor.addEventListener('click', makeEventListener(i));
+                // cache stardard resolution of the image to be used in lightbox view
+                imageUrls[i] = photoUrl;
+            }
         }
     }
 
+    // builds the photo url from the flickr photo element
+    function buildPhotoUrl(photo) {
+        // default image
+        var url = 'images/no_image.svg';
+        // attributes required to build the flickr image url
+        var farm = photo.getAttribute('farm');
+        var server = photo.getAttribute('server');
+        var id = photo.getAttribute('id');
+        var secret = photo.getAttribute('secret');
+        // only build when all attributes available
+        if (farm && server && id && secret) {
+            url = 'http://farm' + farm + '.static.flickr.com/' + server + '/' + id + '_' + secret + '_' + 't.jpg';
+        }
+        return url;
+    }
+
+    // returns a click event listener with the idx parameter stored used its scope
+    // this is one way to use the image specific index without using any global collection
+    function makeEventListener(idx) {
+        return function(e) {
+            lightboxDelegate(imageUrls, e, idx);
+        };
+    }
+
+    return FlickrPhotoSet;
+}());
+
+// Common utility functions
+var Utility = (function() {
+    var utils = {};
+
     // Our internal utility to make Xml Http requests
     // This function returns a 'promise' to be used by the caller
-    function makeXHttpRequest(url) {
+    utils.makeXHttpRequest = function(url) {
         var promise = new Promise(function(resolve, reject) {
             var request = new XMLHttpRequest();
             if (typeof request !== 'undefined' && request !== null) {
@@ -174,12 +222,23 @@ var LB = (function() {
         });
 
         return promise;
-    }
+    };
+
+    // returns a hash of query parameters and values
+    utils.getQueryParams = function() {
+        var params = {};
+        var keyValuePairs = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+        for (var i = 0, l = keyValuePairs.length; i < l; i++) {
+            var pair = keyValuePairs[i].split('=');
+            params[pair[0]] = pair[1];
+        }
+        return params;
+    };
 
     // log errors to console
-    function logError(message) {
+    utils.logError = function(message) {
         console.log(message);
-    }
+    };
 
-    return lb;
+    return utils;
 }());
