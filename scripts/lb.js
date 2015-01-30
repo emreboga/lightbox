@@ -1,17 +1,19 @@
 var LB = (function() {
     var lb = {};
+    var flickrKey = 'd22ceeb31ddf3c037c6e5f88fa39a249';
 
     lb.imageUrls = [];
 
     lb.render = function(elmId) {
-        getThumbnails().then(function(response) {
-            renderThumbnails(elmId, response.data);
+        getPhotos().then(function(response) {
+            var photos = response.getElementsByTagName('photo');
+            renderThumbnails(elmId, photos);
         }, logError);
     };
 
-    function getThumbnails() {
-        var url = 'https://api.instagram.com/v1/media/popular?client_id=0b6d705a46474d258f5980c77c750ecd&count=5';
-        //var url = 'http://127.0.0.1:7777/mocks/popular_5.json';
+    function getPhotos() {
+        var url = 'https://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos&photoset_id=72157626579923453&api_key=' + flickrKey;
+        //var url = 'http://127.0.0.1:7777/mocks/flickr.xml';
         return makeXHttpRequest(url);
     }
 
@@ -19,23 +21,40 @@ var LB = (function() {
         var elm = document.getElementById(elmId);
         if (typeof elm !== 'undefined' && elm !== null) {
             for (var i = 0, l = data.length; i < l; i++) {
-                // get thumbnail data of the image
-                var thumbnail = data[i].images.thumbnail;
+                var photo = data[i];
+                // construct the image url
+                var photoUrl = buildPhotoUrl(photo);
                 // create an anchor and a child image element for each image
                 var imgAnchor = document.createElement('a');
-                imgAnchor.innerHTML = '<img src="' + encodeURI(thumbnail.url) + '">';
+                imgAnchor.innerHTML = '<img src="' + encodeURI(photoUrl) + '" alt="' + photo.getAttribute('title') + '">';
                 // append each anchor to the container and listen to click event
                 elm.appendChild(imgAnchor);
                 imgAnchor.addEventListener('click', makeEventListener(i));
                 // cache stardard resolution of the image to be used in lightbox view
-                lb.imageUrls[i] = data[i].images.standard_resolution.url;
+                lb.imageUrls[i] = photoUrl;
             }
         }
     }
 
+    // builds the photo url from the flickr photo element
+    function buildPhotoUrl(photo) {
+        // default image
+        var url = 'images/no_image.svg';
+        // attributes required to build the flickr image url
+        var farm = photo.getAttribute('farm');
+        var server = photo.getAttribute('server');
+        var id = photo.getAttribute('id');
+        var secret = photo.getAttribute('secret');
+        // only build when all attributes available
+        if (farm && server && id && secret) {
+            url = 'http://farm' + farm + '.static.flickr.com/' + server + '/' + id + '_' + secret + '_' + 't.jpg';
+        }
+        return url;
+    }
+
+    // returns a click event listener with the idx parameter stored used its scope
+    // this is one way to use the image specific index without using any global collection
     function makeEventListener(idx) {
-        // this function returns a click event listener with the idx parameter stored its scope
-        // this is one way to use the image specific index without using any global collection
         return function(e) {
             setupLightBox(e, idx);
         };
@@ -66,7 +85,6 @@ var LB = (function() {
         imageElm.addEventListener('click', function(e) {
             e.stopPropagation();
         });
-
     }
 
     function setupNavigation() {
@@ -75,6 +93,20 @@ var LB = (function() {
         var nextElm = document.getElementsByClassName('next')[0];
         prevElm.addEventListener('click', prevImage);
         nextElm.addEventListener('click', nextImage);
+        // add keydown listeners at document level to use arrow keys
+        document.addEventListener('keydown', function(e) {
+            e.preventDefault();
+            switch (e.which) {
+                case 37: // left
+                    prevImage(e);
+                    break;
+                case 39: // right
+                    nextImage(e);
+                    break;
+                default:
+                    return;
+            }
+        });
     }
 
     function prevImage(e) {
@@ -112,7 +144,7 @@ var LB = (function() {
                 request.onreadystatechange = function() {
                     if (request.readyState === 4) {
                         if (request.status === 200) {
-                            var response = JSON.parse(request.responseText);
+                            var response = request.responseXML;
                             resolve(response);
                         } else {
                             reject();
@@ -129,6 +161,7 @@ var LB = (function() {
         return promise;
     }
 
+    // log errors to console
     function logError(message) {
         console.log(message);
     }
