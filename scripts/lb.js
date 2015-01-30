@@ -79,7 +79,7 @@ var LB = (function() {
         setImage(imageElm, idx);
         // add listener to close the lightbox when clicked outside
         lightboxElm.addEventListener('click', function() {
-            lightboxElm.style.display = 'none';
+            closeLightbox(lightboxElm);
         });
         // add listener not to close the lightbox when clicked on the image
         imageElm.addEventListener('click', function(e) {
@@ -94,19 +94,7 @@ var LB = (function() {
         prevElm.addEventListener('click', prevImage);
         nextElm.addEventListener('click', nextImage);
         // add keydown listeners at document level to use arrow keys
-        document.addEventListener('keydown', function(e) {
-            e.preventDefault();
-            switch (e.which) {
-                case 37: // left
-                    prevImage(e);
-                    break;
-                case 39: // right
-                    nextImage(e);
-                    break;
-                default:
-                    return;
-            }
-        });
+        document.addEventListener('keydown', navigateKeydown);
     }
 
     function prevImage(e) {
@@ -128,11 +116,38 @@ var LB = (function() {
         setImage(imageElm, parseInt(idx));
     }
 
+    function navigateKeydown(e) {
+        e.preventDefault();
+        switch (e.which) {
+            case 37: // left
+                prevImage(e);
+                break;
+            case 39: // right
+                nextImage(e);
+                break;
+            case 27: // escape
+                closeLightbox(null);
+                break;
+            default:
+                return;
+        }
+    }
+
     function setImage(imageElm, idx) {
         // set new image src and update next/prev indexes in data- attributes
         imageElm.src = encodeURI(lb.imageUrls[idx]);
         imageElm.dataset.prevImageIndex = idx === 0 ? lb.imageUrls.length - 1 : idx - 1;
         imageElm.dataset.nextImageIndex = idx === lb.imageUrls.length - 1 ? 0 : idx + 1;
+    }
+
+    function closeLightbox(elm) {
+        var lightboxElm = elm || document.getElementsByClassName('lightbox')[0];
+        if (typeof lightboxElm !== 'undefined' && lightboxElm !== null) {
+            // close the lightbox
+            lightboxElm.style.display = 'none';
+            // remove keydown listeners at document level when closing the lightbox
+            document.removeEventListener('keydown', navigateKeydown);
+        }
     }
 
     // Our internal utility to make Xml Http requests
