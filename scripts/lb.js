@@ -3,12 +3,18 @@ var LightBox = (function() {
     var imageUrls = [];
     var apiKey, elmId, photoSetId;
 
+    // constructor
+    // options are ...
+    // apiKey: key for the flickr api
+    // elmId: element identifier to render the image gallery
+    // photoSetId: flickr photo set identifier to be rendered
     function LightBox(options) {
         apiKey = options.apiKey;
         elmId = options.containerId;
         photoSetId = options.photoSetId;
     }
 
+    // renders the lightbox
     LightBox.prototype.render = function() {
         var photoSet = new FlickrPhotoSet({
             'callback': setupLightBox,
@@ -18,6 +24,8 @@ var LightBox = (function() {
         photoSet.render(elmId);
     };
 
+    // uber function for lightbox setup
+    // see the comments below for more details
     function setupLightBox(images, e, idx) {
         // prevent default click behavior to avoid the browser closing the overlay
         e.preventDefault();
@@ -30,6 +38,7 @@ var LightBox = (function() {
         setupNavigation();
     }
 
+    // displays the lightbox placing the image with index specified
     function displayLigthBox(idx) {
         var lightboxElm = document.getElementsByClassName('lightbox')[0];
         var imageElm = document.getElementsByClassName('picture')[0];
@@ -47,6 +56,7 @@ var LightBox = (function() {
         });
     }
 
+    // closes the light box and cleans up any higher level event listeners
     function closeLightbox(elm) {
         var lightboxElm = elm || document.getElementsByClassName('lightbox')[0];
         if (typeof lightboxElm !== 'undefined' && lightboxElm !== null) {
@@ -57,6 +67,8 @@ var LightBox = (function() {
         }
     }
 
+    // sets up the image navigation for the lightbox
+    // this inludes prev/next button and arrow keys
     function setupNavigation() {
         // get prev and next elements and add click listeners for navigation
         var prevElm = document.getElementsByClassName('prev')[0];
@@ -67,18 +79,22 @@ var LightBox = (function() {
         document.addEventListener('keydown', navigateKeydown);
     }
 
+    // event handler to navigate to the next image
     function prevImage(e) {
         // stop propagation not to close the lightbox when clicked on prev
         e.stopPropagation();
         navigate(false/*next*/);
     }
 
+    // event handler to navigate to the previous image
     function nextImage(e) {
         // stop propagation not to close the lightbox when clicked on next
         e.stopPropagation();
         navigate(true/*next*/);
     }
 
+    // navigates away from the current image
+    // next: true if navigation is to the next image, false otherwise
     function navigate(next) {
         // set the new image from the next or previous index
         var imageElm = document.getElementsByClassName('picture')[0];
@@ -86,6 +102,7 @@ var LightBox = (function() {
         setImage(imageElm, parseInt(idx));
     }
 
+    // event handler to navigate the image with arrow keys and close the lightbox with escape key
     function navigateKeydown(e) {
         e.preventDefault();
         switch (e.which) {
@@ -103,6 +120,9 @@ var LightBox = (function() {
         }
     }
 
+    // sets an image with the index in the photo container
+    // imageElm: HTML element for the image to set
+    // idx: index of the image in all images
     function setImage(imageElm, idx) {
         // set new image src and update next/prev indexes in data- attributes
         imageElm.src = encodeURI(imageUrls[idx]);
@@ -120,6 +140,7 @@ var FlickrPhotoSet = (function() {
     var lightboxDelegate, apiKey, photoSetId;
 
     // constructor
+    // options are ...
     // data: photo set as xml node
     // callback: handler to call back when an image is clicked
     function FlickrPhotoSet(options) {
