@@ -1,2 +1,2 @@
-# lightboxsample
-Lightbox view sample for Slack
+# lightbox
+A lightbox view sample.
